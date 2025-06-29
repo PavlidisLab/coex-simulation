@@ -32,36 +32,35 @@ Start by creating a simulator instance.
 simulator_environment <- initSimulator()
 simulator_obj <- simulator_environment$this
 api <- simulator_environment$api
+
 2. Set Reference Data
 The simulator learns parameters from provided reference datasets.
-•
-Reference Expression Matrices (exprmat): Used to estimate marginal distributions.
-◦
-Subject-level (sbj): For subject-level expression counts.
-◦
-Cell-level (cel): For individual cell expression counts.
-•
-Cell Type Expression Profiles (cteprf): Defines mean expression per gene across cell types.
-•
-Co-expression Programs (coexPrograms): Specifies gene groups that co-express and their correlation.
-◦
-Subject-level (sbj): For co-expression across subjects. Cell types sharing a program synchronize at the subject level.
-◦
-Cell-level (cel): For co-expression within individual cells.
+    •Reference Expression Matrices (exprmat): Used to estimate marginal distributions.
+        ◦Subject-level (sbj): For subject-level expression counts.
+        ◦Cell-level (cel): For individual cell expression counts.
+    •Cell Type Expression Profiles (cteprf): Defines mean expression per gene across cell types.
+    •Co-expression Programs (coexPrograms): Specifies gene groups that co-express and their correlation.
+        ◦Subject-level (sbj): For co-expression across subjects. Cell types sharing a program synchronize at the subject level.
+        ◦Cell-level (cel): For co-expression within individual cells.
+
 3. Fit Marginal Distribution Models
 This step fits Gamma distribution models for each gene. A third-degree polynomial model (lm(variance ~ poly(mean, 3, raw = TRUE))) predicts variance from mean; residuals add variability.
 simulator_obj <- api$fitMds(simulator_obj)
+
 4. Simulate Baseline Cells (Cell-Level Variability)
 This generates initial cell-level expression, incorporating cell-level co-expression. Internal private$utils$generateVals samples from Gamma distributions with co-expression.
 # nSubject: number of subjects; nCell: number of cells per subject per cell type
 simCells_output <- api$simBseLnCels(simulator_obj, nSubject = 10, nCell = 100)
+
 5. Simulate Subject-Level Means (Subject-Level Variability)
 This generates subject-level mean expression for each gene and cell type, including subject-level co-expression patterns. Internal private$utils$generateVals is used for sampling.
 # nSubject: number of subjects
 simSbjs_output <- api$simSbjLvMeans(simulator_obj, nSubject = 10)
+
 6. Compute Combined Cell-Level Parameters
 Subject-level means adjust cell-level distribution models, creating unique cell-level Gamma distribution parameters for each gene, cell type, and subject. The original cell-level distribution's mean is adjusted while maintaining the relative variance (coefficient of variation, variance / mean) for each gene.
 cel_params_combined <- api$computeCelParams(simulator_obj, sbjLvMeans = simSbjs_output$simSbjs)
+
 7. Convert Cell-Level Distributions to Final Expressions
 Baseline cells are transformed to reflect subject-level variability. This involves converting baseline cell expressions to p-values using their original Gamma distribution parameters, then transforming these p-values back into new expression values using the subject-specific cell-level parameters.
 final_exprmat_output <- api$convertCelLvDist(
@@ -69,9 +68,9 @@ final_exprmat_output <- api$convertCelLvDist(
     celMdParamsOrig = simulator_obj$mdParams$cel,
     celMdParamsNew = cel_params_combined
 )
+
 Additional Utility Function
-•
-api$GENERATE_CC_SPECS(nBkSamples, nTotalCells, baselineProps, sdFrac): Generates cellular composition specifications. It produces a matrix specifying cell counts per cell type for subjects, using baselineProps (proportion of each cell type) and sdFrac (standard deviation fraction) for sampling from a normal distribution.
+    •api$GENERATE_CC_SPECS(nBkSamples, nTotalCells, baselineProps, sdFrac): Generates cellular composition specifications. It produces a matrix specifying cell counts per cell type for subjects, using baselineProps (proportion of each cell type) and sdFrac (standard deviation fraction) for sampling from a normal distribution.
 # Example: Generate specs for 5 subjects, 1000 total cells, with baseline proportions
 # baseline_props <- c(typeA = 0.5, typeB = 0.5)
 # cell_comp_specs <- api$GENERATE_CC_SPECS(nBkSamples = 5, nTotalCells = 1000, baselineProps = baseline_props, sdFrac = 0.1)
